@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SwipeLearn</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #111114;
+  --surface: #1a1a1f;
+  --card-bg: #222228;
+  --text: #eae8e4;
+  --muted: #6b6a72;
+  --know: #2ee89e;
+  --repeat: #ff5a5a;
+  --cat-attribution: #ff6b35;
+  --cat-causal: #06d6a0;
+  --cat-mmm: #ffd166;
+  --cat-stats: #118ab2;
+  --cat-code: #b47aff;
+  --cat-business: #ff85a1;
+  --radius: 24px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+/* ===== HEADER ===== */
+.header {
+  width: 100%;
+  max-width: 480px;
+  padding: 20px 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+}
+
+.logo span { opacity: 0.3; }
+
+.streak {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.streak .fire { font-style: normal; }
+
+.stats-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.stat-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-chip .num { color: var(--text); }
+
+/* ===== CATEGORIES ===== */
+.categories {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 2px 0;
+}
+
+.categories::-webkit-scrollbar { display: none; }
+
+.cat-pill {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.25s;
+  border: 1.5px solid transparent;
+  background: rgba(255,255,255,0.04);
+  color: var(--muted);
+  position: relative;
+}
+
+.cat-pill.active {
+  color: var(--text);
+}
+
+.cat-pill[data-cat="all"].active { border-color: var(--text); background: rgba(255,255,255,0.08); }
+.cat-pill[data-cat="attribution"].active { border-color: var(--cat-attribution); background: rgba(255,107,53,0.12); color: var(--cat-attribution); }
+.cat-pill[data-cat="causal"].active { border-color: var(--cat-causal); background: rgba(6,214,160,0.12); color: var(--cat-causal); }
+.cat-pill[data-cat="mmm"].active { border-color: var(--cat-mmm); background: rgba(255,209,102,0.12); color: var(--cat-mmm); }
+.cat-pill[data-cat="stats"].active { border-color: var(--cat-stats); background: rgba(17,138,178,0.12); color: var(--cat-stats); }
+.cat-pill[data-cat="code"].active { border-color: var(--cat-code); background: rgba(180,122,255,0.12); color: var(--cat-code); }
+.cat-pill[data-cat="business"].active { border-color: var(--cat-business); background: rgba(255,133,161,0.12); color: var(--cat-business); }
+
+.cat-pill .cat-count {
+  display: inline-block;
+  margin-left: 2px;
+  opacity: 0.5;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-wrap {
+  width: 100%;
+  max-width: 480px;
+  padding: 8px 24px;
+  flex-shrink: 0;
+}
+
+.progress-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--know);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  width: 0%;
+}
+
+.progress-text {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ===== CARD AREA ===== */
+.card-area {
+  flex: 1;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 8px 24px 16px;
+  overflow: hidden;
+}
+
+.card-stack {
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 3/4;
+  max-height: 480px;
+  position: relative;
+}
+
+/* ===== CARD ===== */
+.card {
+  position: absolute;
+  inset: 0;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+  transition: box-shadow 0.2s;
+  border: 1.5px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.card.hint-know::before {
+  background: linear-gradient(135deg, rgba(46,232,158,0.15), transparent 60%);
+  opacity: 1;
+}
+
+.card.hint-repeat::before {
+  background: linear-gradient(225deg, rgba(255,90,90,0.15), transparent 60%);
+  opacity: 1;
+}
+
+.card:active { cursor: grabbing; }
+
+.card.behind {
+  transform: scale(0.94) translateY(12px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.card.far-behind {
+  transform: scale(0.88) translateY(24px);
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.card-cat-badge {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 100px;
+  align-self: flex-start;
+  margin-bottom: 20px;
+}
+
+.card[data-cat="attribution"] .card-cat-badge { background: rgba(255,107,53,0.15); color: var(--cat-attribution); }
+.card[data-cat="causal"] .card-cat-badge { background: rgba(6,214,160,0.15); color: var(--cat-causal); }
+.card[data-cat="mmm"] .card-cat-badge { background: rgba(255,209,102,0.15); color: var(--cat-mmm); }
+.card[data-cat="stats"] .card-cat-badge { background: rgba(17,138,178,0.15); color: var(--cat-stats); }
+.card[data-cat="code"] .card-cat-badge { background: rgba(180,122,255,0.15); color: var(--cat-code); }
+.card[data-cat="business"] .card-cat-badge { background: rgba(255,133,161,0.15); color: var(--cat-business); }
+
+.card-number {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  opacity: 0.04;
+  position: absolute;
+  right: 24px;
+  top: 20px;
+  line-height: 1;
+}
+
+.card-term {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 16px;
+  letter-spacing: -0.3px;
+}
+
+.card-explain {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #b8b6b0;
+  font-weight: 400;
+  flex: 1;
+}
+
+.card-explain strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.card-example {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.card-example::before {
+  content: 'Пример: ';
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.5;
+}
+
+/* Swipe verdict overlays */
+.verdict {
+  position: absolute;
+  top: 28px;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 3px solid;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  z-index: 5;
+  transform: rotate(-12deg);
+}
+
+.verdict-know {
+  right: 20px;
+  color: var(--know);
+  border-color: var(--know);
+  transform: rotate(12deg);
+}
+
+.verdict-repeat {
+  left: 20px;
+  color: var(--repeat);
+  border-color: var(--repeat);
+  transform: rotate(-12deg);
+}
+
+.card.hint-know .verdict-know { opacity: 1; }
+.card.hint-repeat .verdict-repeat { opacity: 1; }
+
+/* ===== BUTTONS ===== */
+.actions {
+  width: 100%;
+  max-width: 480px;
+  padding: 0 24px 28px;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  transition: all 0.2s;
+}
+
+.btn-repeat {
+  border-color: rgba(255,90,90,0.3);
+  color: var(--repeat);
+}
+
+.btn-repeat:hover {
+  background: rgba(255,90,90,0.1);
+  border-color: var(--repeat);
+  transform: scale(1.1);
+}
+
+.btn-know {
+  border-color: rgba(46,232,158,0.3);
+  color: var(--know);
+}
+
+.btn-know:hover {
+  background: rgba(46,232,158,0.1);
+  border-color: var(--know);
+  transform: scale(1.1);
+}
+
+.btn-undo {
+  width: 48px;
+  height: 48px;
+  border-color: rgba(255,255,255,0.1);
+  color: var(--muted);
+  font-size: 18px;
+  align-self: center;
+}
+
+.btn-undo:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--text);
+}
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  position: absolute;
+  inset: 0;
+}
+
+.empty-state.visible { display: flex; }
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.empty-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.empty-sub {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+.btn-reset {
+  margin-top: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 28px;
+  border-radius: 100px;
+  border: none;
+  background: var(--know);
+  color: var(--bg);
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.btn-reset:hover { transform: scale(1.05); }
+
+/* ===== ANIMATION: card fly away ===== */
+@keyframes flyRight {
+  to { transform: translateX(150%) rotate(25deg); opacity: 0; }
+}
+@keyframes flyLeft {
+  to { transform: translateX(-150%) rotate(-25deg); opacity: 0; }
+}
+
+.card.fly-right { animation: flyRight 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.card.fly-left { animation: flyLeft 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* ===== KEYBOARD HINTS ===== */
+.kbd-hints {
+  position: fixed;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.4;
+}
+
+.kbd {
+  padding: 2px 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+}
+
+@media (max-width: 480px) {
+  .kbd-hints { display: none; }
+  .card-term { font-size: 19px; }
+  .card-explain { font-size: 15px; }
+  .card { padding: 24px 22px; }
+  .header { padding: 16px 16px 0; }
+  .card-area { padding: 8px 16px 12px; }
+  .actions { padding: 0 16px 20px; }
+  .progress-wrap { padding: 8px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="top-bar">
+    <div class="logo">swipe<span>learn</span></div>
+    <div class="streak"><em class="fire">&#x1f525;</em> <span id="streakCount">0</span></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-chip"><span class="num" id="knownCount">0</span> learned</div>
+    <div class="stat-chip"><span class="num" id="repeatCount">0</span> to repeat</div>
+    <div class="stat-chip"><span class="num" id="remainCount">0</span> left</div>
+  </div>
+  <div class="categories" id="categories">
+    <div class="cat-pill active" data-cat="all">All</div>
+    <div class="cat-pill" data-cat="attribution">Attribution</div>
+    <div class="cat-pill" data-cat="causal">Causal</div>
+    <div class="cat-pill" data-cat="mmm">MMM</div>
+    <div class="cat-pill" data-cat="stats">Stats</div>
+    <div class="cat-pill" data-cat="code">Code</div>
+    <div class="cat-pill" data-cat="business">Business</div>
+  </div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText">0 / 0</div>
+</div>
+
+<div class="card-area">
+  <div class="card-stack" id="cardStack"></div>
+  <div class="empty-state" id="emptyState">
+    <div class="empty-icon">&#10024;</div>
+    <div class="empty-title">All done!</div>
+    <div class="empty-sub">You've gone through all cards in this category. Reset to practice again.</div>
+    <button class="btn-reset" id="btnReset">Start Over</button>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn btn-undo" id="btnUndo" title="Undo">&#8630;</button>
+  <button class="btn btn-repeat" id="btnRepeat" title="Repeat">&#10007;</button>
+  <button class="btn btn-know" id="btnKnow" title="Know it">&#10003;</button>
+</div>
+
+<div class="kbd-hints">
+  <span><span class="kbd">&larr;</span> repeat</span>
+  <span><span class="kbd">&rarr;</span> know</span>
+  <span><span class="kbd">Z</span> undo</span>
+</div>
+
+<script>
+const CARDS = [
+  // ===== ATTRIBUTION (10) =====
+  { cat: "attribution", term: "Last Click Attribution", explain: "Вся заслуга за конверсию идёт <strong>последнему каналу</strong>, по которому кликнул пользователь. Просто, но нечестно — игнорирует всё, что было до.", example: "Человек увидел рекламу в ВК, погуглил, кликнул по контексту — контекст получает 100% заслуги." },
+  { cat: "attribution", term: "First Click Attribution", explain: "Вся заслуга — <strong>первому касанию</strong>. Полезно, чтобы понять, какие каналы приводят новых людей. Но игнорирует то, что \"дожало\" до покупки.", example: "Пользователь пришёл из блога, потом 3 раза вернулся через ретаргетинг — блог получает 100%." },
+  { cat: "attribution", term: "Multi-Touch Attribution", explain: "Заслуга делится между <strong>несколькими касаниями</strong> в цепочке. Варианты: поровну (Linear), больше первому и последнему (U-shape), или по затуханию (Time Decay).", example: "Цепочка из 4 касаний при U-shape: первое и последнее получают по 40%, два средних — по 10%." },
+  { cat: "attribution", term: "Markov Chain Attribution", explain: "Строим <strong>граф переходов</strong> между каналами. Убираем каждый канал по очереди и смотрим, насколько упадут конверсии. Чем больше падение — тем важнее канал.", example: "Убрали email из цепочки — конверсии упали на 30%. Значит email вносит 30% вклада." },
+  { cat: "attribution", term: "Shapley Value", explain: "Метод из <strong>теории игр</strong>. Считает вклад каждого канала, перебирая все возможные комбинации. Математически честный, но тяжёлый для вычислений.", example: "Shapley говорит: контекст = 35%, email = 25%, соцсети = 20%, директ = 20%." },
+  { cat: "attribution", term: "Cross-Device Tracking", explain: "Один человек заходит с <strong>телефона, планшета и ноута</strong>. Без cross-device ты видишь трёх разных пользователей. Решение: user ID, детерминистический или вероятностный мэтчинг.", example: "Пользователь кликнул рекламу на телефоне, купил на ноуте — без cross-device это \"потерянная\" конверсия." },
+  { cat: "attribution", term: "View-Through Conversion", explain: "Пользователь <strong>видел</strong> баннер, но не кликнул. Потом пришёл и купил. Считать ли это заслугой баннера? Спорно, но для display/video-рекламы это важный сигнал.", example: "1000 показов баннера, 0 кликов, но 15 покупок в течение 7 дней — это view-through." },
+  { cat: "attribution", term: "Attribution Window", explain: "Временное окно, в котором мы <strong>засчитываем касание</strong>. Обычно 7-30 дней. Слишком короткое — теряешь длинные цепочки. Слишком длинное — засчитываешь случайные совпадения.", example: "При окне 7 дней клик 8 дней назад не считается. При 30 днях — считается." },
+  { cat: "attribution", term: "Last Significant Click", explain: "Как Last Click, но <strong>игнорирует \"мусорные\" касания</strong>: прямые заходы, закладки, organic brand-запросы. Засчитывает последний осмысленный маркетинговый контакт.", example: "Цепочка: контекст → прямой заход → покупка. Last Click скажет \"direct\", Last Significant — \"контекст\"." },
+  { cat: "attribution", term: "Incrementality vs Attribution", explain: "Атрибуция говорит \"кто коснулся конверсии\". Инкрементальность — <strong>\"а была бы конверсия БЕЗ этого канала?\"</strong> Разные вопросы — и разные ответы.", example: "Брендовый контекст: атрибуция = 40% конверсий. Инкрементальность = 5%, потому что люди и так бы пришли." },
+
+  // ===== CAUSAL INFERENCE (10) =====
+  { cat: "causal", term: "A/B-тест (RCT)", explain: "<strong>Рандомизированный эксперимент</strong>. Делим пользователей случайно на две группы. Одной показываем изменение, другой — нет. Разница в метрике = эффект.", example: "50% видят новый баннер, 50% — старый. Конверсия выросла на 3% — это эффект баннера." },
+  { cat: "causal", term: "Geo-Lift Test", explain: "A/B-тест, но на уровне <strong>городов/регионов</strong>. В одних запускаем рекламу, в других — нет. Сравниваем. Работает для ТВ и наружки, где нельзя таргетить конкретных людей.", example: "Запустили ТВ-рекламу в Казани, не запустили в Самаре. Продажи в Казани выросли на 12%." },
+  { cat: "causal", term: "Causal Impact", explain: "Метод от Google. Строим <strong>прогноз \"что было бы без вмешательства\"</strong> на основе контрольных рядов. Сравниваем прогноз с реальностью. Разница = каузальный эффект.", example: "Запустили кампанию 1 марта. Модель предсказала 1000 заказов, получили 1300. Эффект = +300." },
+  { cat: "causal", term: "Difference-in-Differences", explain: "Сравниваем <strong>две группы ДО и ПОСЛЕ</strong> события. Вычитаем \"естественную\" разницу между группами. Остаток = эффект вмешательства.", example: "До кампании: тест 100, контроль 80. После: тест 150, контроль 110. DiD = (150-100)-(110-80) = 20." },
+  { cat: "causal", term: "Synthetic Control", explain: "Нет идеальной контрольной группы? <strong>Собираем её из кусочков</strong>. Берём несколько похожих регионов и взвешиваем их так, чтобы до эксперимента они совпадали с тестовым.", example: "Для Москвы синтетический контроль = 0.4×СПб + 0.3×Казань + 0.3×Новосибирск." },
+  { cat: "causal", term: "Confounding Variable", explain: "<strong>Скрытая переменная</strong>, которая влияет и на причину, и на результат. Создаёт ложную связь. Главный враг каузального анализа.", example: "Мороженое и утопления растут летом. Конфаундер — жара. Мороженое не убивает людей." },
+  { cat: "causal", term: "Selection Bias", explain: "Группы сравнения <strong>изначально разные</strong>, а не из-за вмешательства. Без рандомизации это почти неизбежно.", example: "Сравниваешь купивших подписку и нет. Но купившие изначально более мотивированы — это не эффект подписки." },
+  { cat: "causal", term: "Regression to the Mean", explain: "Экстремальные результаты <strong>стремятся к среднему</strong> при повторном измерении. Не путай это с эффектом вмешательства.", example: "Худший канал в январе показал рост в феврале. Это не твоя оптимизация — это регрессия к среднему." },
+  { cat: "causal", term: "Propensity Score Matching", explain: "Когда нельзя рандомизировать, <strong>подбираем похожие пары</strong>: один из теста, один из контроля. Похожесть считается через вероятность попасть в тест.", example: "Нашли для каждого пользователя с рекламой \"близнеца\" без рекламы. Сравнили их покупки." },
+  { cat: "causal", term: "Instrumental Variable", explain: "Когда конфаундеры мешают, ищем <strong>\"инструмент\"</strong> — переменную, которая влияет на причину, но не на результат напрямую. Позволяет извлечь чистый эффект.", example: "Погода влияет на то, видит ли человек наружку, но не на желание купить напрямую. Погода = инструмент." },
+
+  // ===== MMM (10) =====
+  { cat: "mmm", term: "Marketing Mix Model", explain: "Регрессия, которая раскладывает <strong>выручку на вклады каналов</strong>: ТВ, контекст, соцсети + внешние факторы. Работает на агрегированных данных (дни/недели), не нужны куки.", example: "Выручка = база + 0.3×ТВ + 0.2×контекст + сезонность + промо + шум." },
+  { cat: "mmm", term: "Adstock Effect", explain: "Реклама <strong>не перестаёт работать сразу</strong> после показа. ТВ-ролик действует ещё 2-4 недели. Adstock — это \"хвост\" эффекта, который затухает со временем.", example: "Потратили 1M на ТВ в неделю 1. Эффект: W1=100%, W2=60%, W3=36%, W4=22%..." },
+  { cat: "mmm", term: "Saturation Curve", explain: "Первый миллион в канал даёт больше, чем пятый. <strong>Отдача убывает</strong>. Saturation curve показывает, где канал \"насыщается\" и деньги уходят в воздух.", example: "Контекст: 0-2M → отличный ROI. 2-5M → средний. 5M+ → почти не растёт." },
+  { cat: "mmm", term: "Base vs Incremental", explain: "Base — продажи, которые были бы <strong>без маркетинга</strong> (бренд, привычка, сезон). Incremental — то, что маркетинг реально добавил. MMM разделяет их.", example: "Общие продажи 10M. Base = 6M (пришли бы сами). Incremental от маркетинга = 4M." },
+  { cat: "mmm", term: "Budget Optimization", explain: "Зная saturation curves и ROI каналов, MMM говорит <strong>как перераспределить бюджет</strong>, чтобы заработать больше при тех же тратах.", example: "Переложить 20% из ТВ в digital → выручка +8%. ТВ был перенасыщен, digital — нет." },
+  { cat: "mmm", term: "Carry-over Effect", explain: "Долгосрочный <strong>накопительный эффект бренда</strong>. Отличие от adstock: adstock — недели, carry-over — месяцы. Бренд-реклама строит узнаваемость, которая конвертит потом.", example: "После 6 месяцев ТВ-рекламы базовые продажи выросли на 15% — это carry-over." },
+  { cat: "mmm", term: "PyMC-Marketing", explain: "Python-библиотека для <strong>байесовского MMM</strong>. Позволяет задавать prior'ы (\"я верю, что ТВ работает\"), получать uncertainty и interpretable результаты.", example: "model = MMM(adstock='geometric', saturation='logistic'); model.fit(X, y)" },
+  { cat: "mmm", term: "Robyn (Meta)", explain: "Open-source MMM от Meta на R. <strong>Автоматизирует</strong> подбор параметров (adstock, saturation) через Nevergrad. Генерирует несколько моделей и сравнивает.", example: "Robyn сгенерировал 5000 моделей, отобрал 10 лучших по fit и бизнес-логике." },
+  { cat: "mmm", term: "Decomposition Chart", explain: "Главный артефакт MMM. <strong>Столбчатая диаграмма</strong>, где каждая полоска — вклад канала в выручку. Сразу видно, кто зарабатывает, а кто съедает бюджет.", example: "Chart показывает: Base 55%, контекст 18%, ТВ 12%, email 8%, соцсети 4%, промо 3%." },
+  { cat: "mmm", term: "Calibration (MMM)", explain: "Проверяем MMM <strong>через эксперименты</strong>. Если MMM говорит \"ТВ даёт 15% продаж\", а geo-lift показывает 10% — калибруем модель. Без этого MMM может врать.", example: "MMM: display ROI = 5x. Geo-lift: display ROI = 1.2x. Калибруем prior'ы в модели." },
+
+  // ===== STATS (10) =====
+  { cat: "stats", term: "P-value", explain: "Вероятность увидеть такой результат (или более экстремальный), <strong>если эффекта на самом деле нет</strong>. p < 0.05 НЕ значит \"эффект есть\" — значит \"данные маловероятны при нулевой гипотезе\".", example: "p = 0.03: если бы кнопка не влияла на конверсию, шанс увидеть такую разницу = 3%." },
+  { cat: "stats", term: "Confidence Interval", explain: "<strong>Диапазон</strong>, в котором лежит настоящий эффект с заданной вероятностью (обычно 95%). Чем уже — тем точнее оценка. Чем больше данных — тем уже.", example: "Конверсия выросла на 5%, CI = [2%, 8%]. Мы на 95% уверены, что эффект от 2% до 8%." },
+  { cat: "stats", term: "Statistical Power", explain: "Вероятность <strong>обнаружить эффект, если он есть</strong>. Обычно целятся в 80%. Мало данных = низкая power = можешь пропустить реальный эффект.", example: "Power = 40%: даже если кнопка реально лучше, в 60% случаев тест этого не покажет." },
+  { cat: "stats", term: "MDE (Minimum Detectable Effect)", explain: "<strong>Минимальный эффект</strong>, который тест способен поймать при заданном трафике и power. Если ожидаемый эффект меньше MDE — тест бесполезен.", example: "При 10K юзеров в группе MDE = 2%. Если ожидаешь +0.5% — нужно 160K юзеров." },
+  { cat: "stats", term: "Multiple Testing Problem", explain: "Если тестируешь <strong>20 метрик</strong>, одна из них покажет p < 0.05 случайно. Решение: Bonferroni (делим alpha на число тестов) или FDR control.", example: "Проверил 20 метрик, 1 значима. Bonferroni: alpha = 0.05/20 = 0.0025. Уже не значима." },
+  { cat: "stats", term: "Bayesian A/B Testing", explain: "Вместо p-value считаем <strong>вероятность, что B лучше A</strong>. Можно остановить тест в любой момент. Даёт интуитивный ответ: \"87% что новая кнопка лучше\".", example: "P(B > A) = 93%. Expected lift = +4.2%. Можно принимать решение." },
+  { cat: "stats", term: "Bootstrap", explain: "Берём данные и <strong>перемешиваем их 10 000 раз</strong>, каждый раз считая метрику. Получаем распределение. Работает для любой метрики, не нужны допущения о нормальности.", example: "Revenue per user непонятно распределён. Bootstrap 10K раз → CI для среднего." },
+  { cat: "stats", term: "Simpson's Paradox", explain: "Тренд в <strong>каждой подгруппе</strong> противоположен тренду в общих данных. Возникает из-за неравных размеров групп.", example: "Канал A лучше в mobile И desktop. Но в сумме хуже — потому что у A 90% mobile-трафика." },
+  { cat: "stats", term: "Central Limit Theorem", explain: "При достаточном размере выборки <strong>среднее будет нормально распределено</strong>, даже если исходные данные — нет. Поэтому t-тест работает на больших выборках.", example: "Revenue per user — кривое распределение. Но среднее по 1000 юзеров уже ~ нормальное." },
+  { cat: "stats", term: "Effect Size", explain: "<strong>Насколько большой эффект</strong>, а не только \"значимый или нет\". Cohen's d, lift в процентах. Маленький p-value при огромной выборке может означать крошечный эффект.", example: "p = 0.001, но lift = +0.1%. Статистически значимо, практически бесполезно." },
+
+  // ===== CODE (10) =====
+  { cat: "code", term: "Window Functions (SQL)", explain: "<strong>Вычисления по \"окну\" строк</strong>, не схлопывая данные. ROW_NUMBER, RANK, LAG, LEAD, SUM OVER. Must-have для аналитика. Позволяют делать в одном запросе то, что иначе требует подзапросов.", example: "SUM(revenue) OVER (PARTITION BY channel ORDER BY date ROWS 7 PRECEDING) — скользящая сумма за 7 дней." },
+  { cat: "code", term: "CTE (Common Table Expression)", explain: "<strong>Именованный подзапрос</strong> через WITH. Делает сложные запросы читаемыми. Можно строить цепочки: один CTE использует другой.", example: "WITH daily AS (...), weekly AS (SELECT ... FROM daily) SELECT * FROM weekly" },
+  { cat: "code", term: "EXPLAIN / Query Plan", explain: "Показывает, <strong>как база выполняет запрос</strong>: Seq Scan (плохо) vs Index Scan (хорошо). Nested Loop vs Hash Join. Без этого не оптимизируешь запросы.", example: "EXPLAIN ANALYZE показал Seq Scan на 100M строк. Добавил индекс — время с 45с до 0.3с." },
+  { cat: "code", term: "Pandas: groupby + agg", explain: "Аналог GROUP BY в Python. <strong>Группируешь и считаешь агрегаты</strong>. С .agg() можно несколько функций сразу. Основа 90% аналитических скриптов.", example: "df.groupby('channel').agg(revenue=('revenue','sum'), users=('user_id','nunique'))" },
+  { cat: "code", term: "Pandas: merge", explain: "<strong>JOIN таблиц в Python</strong>. how='left'/'inner'/'outer'. Проверяй дубли: если ключ не уникален, получишь декартово произведение и не заметишь.", example: "pd.merge(orders, users, on='user_id', how='left') — подтянули инфу о юзерах к заказам." },
+  { cat: "code", term: "SciPy: stats.ttest_ind", explain: "Двухвыборочный <strong>t-тест</strong> в Python. Сравнивает средние двух групп. Возвращает statistic и p-value. Для A/B тестов — базовый инструмент.", example: "stat, p = ttest_ind(control_revenue, test_revenue); if p < 0.05: print('significant')" },
+  { cat: "code", term: "ClickHouse: Array Functions", explain: "ClickHouse умеет хранить <strong>массивы в столбцах</strong>. arrayJoin, groupArray, arrayMap. Мощно для событийной аналитики: цепочки касаний, воронки.", example: "SELECT groupArray(event) FROM events GROUP BY user_id — собрали последовательность событий." },
+  { cat: "code", term: "GreenPlum: Distribution", explain: "В GreenPlum данные <strong>распределены по нодам</strong>. DISTRIBUTED BY (key) определяет, как. Плохой ключ = data skew = одна нода работает за всех.", example: "DISTRIBUTED BY (user_id) — данные одного юзера на одной ноде. JOIN по user_id будет быстрым." },
+  { cat: "code", term: "Python: statsmodels OLS", explain: "<strong>Линейная регрессия</strong> в Python. Основа для MMM. Даёт коэффициенты, p-values, R², residuals. Читаемый summary(), как в академических статьях.", example: "model = sm.OLS(y, X).fit(); print(model.summary()) — сразу видны значимые переменные." },
+  { cat: "code", term: "Metabase / Tableau basics", explain: "<strong>BI-инструменты</strong> для дашбордов. Metabase — open-source, SQL-first, простой. Tableau — мощнее визуально, drag-n-drop. Оба нужны для отчётности.", example: "В Metabase пишешь SQL-запрос → получаешь интерактивный дашборд за 5 минут." },
+
+  // ===== BUSINESS (10) =====
+  { cat: "business", term: "CAC (Customer Acquisition Cost)", explain: "<strong>Стоимость привлечения одного клиента</strong>. Все маркетинговые траты делим на число новых клиентов. Если CAC > LTV — бизнес теряет деньги.", example: "Потратили 1M на рекламу, привели 500 клиентов. CAC = 2000 руб." },
+  { cat: "business", term: "LTV (Lifetime Value)", explain: "<strong>Сколько денег клиент принесёт за всё время</strong>. Средний чек × частота покупок × время жизни. Ключевая метрика для оценки каналов.", example: "Клиент из контекста: ср. чек 3000 × 4 раза в год × 2 года = LTV 24 000 руб." },
+  { cat: "business", term: "ROAS (Return On Ad Spend)", explain: "<strong>Выручка на рубль рекламы</strong>. ROAS = revenue / ad_spend. ROAS 5x значит: потратил 1 рубль — заработал 5. Не путай с ROI (учитывает прибыль, не выручку).", example: "Контекст: потратили 500K, выручка 2.5M. ROAS = 5x. Но маржинальность 30% → ROI = 1.5x." },
+  { cat: "business", term: "Funnel Analysis", explain: "Разбиваем путь пользователя на <strong>этапы</strong> и считаем конверсию между ними. Показывает, где \"отваливаются\" люди. Приоритизируем самые \"дырявые\" этапы.", example: "Визит → регистрация (12%) → первый заказ (35%) → второй заказ (28%). Дыра = регистрация." },
+  { cat: "business", term: "Cohort Analysis", explain: "Группируем пользователей по <strong>дате первого действия</strong> и смотрим, как они ведут себя со временем. Показывает retention, LTV по когортам, сезонность.", example: "Когорта января: retention M1=40%, M2=25%, M3=20%. Когорта марта: M1=55% — что-то улучшили." },
+  { cat: "business", term: "Channel Mix", explain: "<strong>Распределение бюджета</strong> между каналами. Оптимальный channel mix даёт максимум конверсий при фиксированном бюджете. MMM помогает его найти.", example: "Текущий: 40% контекст, 30% ТВ, 20% соцсети, 10% email. Оптимальный: 50/15/20/15." },
+  { cat: "business", term: "Payback Period", explain: "Через сколько <strong>времени</strong> клиент \"окупает\" свой CAC. Чем короче — тем быстрее бизнес возвращает вложения в маркетинг.", example: "CAC = 5000 руб. Маржа с заказа = 1000 руб. × 2 заказа/мес. Payback = 2.5 месяца." },
+  { cat: "business", term: "Incrementality Test", explain: "Эксперимент: <strong>выключаем канал</strong> для части аудитории и смотрим, сколько продаж потеряли. Показывает реальный вклад, а не атрибуционный.", example: "Выключили ретаргетинг для 10% юзеров. Продажи упали на 3%, а не на 20% как в атрибуции." },
+  { cat: "business", term: "Stakeholder Communication", explain: "Умение <strong>объяснить аналитику бизнесу</strong>. Не \"p-value < 0.05\", а \"мы на 95% уверены, что новая реклама даёт +12% продаж\". Графики > таблицы. Выводы > данные.", example: "Вместо \"coeff = 0.34, SE = 0.08\" → \"каждый доп. миллион в ТВ приносит 340K выручки\"." },
+  { cat: "business", term: "North Star Metric", explain: "<strong>Одна главная метрика</strong>, которая отражает ценность для пользователя. Вся команда фокусируется на ней. Для маркетплейса — это обычно \"количество успешных сделок\".", example: "Профи.ру: North Star = количество завершённых заказов. Всё остальное — прокси." }
+];
+
+// ===== STATE =====
+let state = loadState();
+
+function defaultState() {
+  return {
+    known: [],
+    repeat: [],
+    currentCat: 'all',
+    streak: 0
+  };
+}
+
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem('swipelearn'));
+    return s && s.known ? s : defaultState();
+  } catch { return defaultState(); }
+}
+
+function saveState() {
+  localStorage.setItem('swipelearn', JSON.stringify(state));
+}
+
+// ===== DECK =====
+let deck = [];
+let history = [];
+
+function buildDeck() {
+  const cat = state.currentCat;
+  const pool = cat === 'all' ? CARDS : CARDS.filter(c => c.cat === cat);
+  // repeat cards first, then unseen
+  const knownSet = new Set(state.known);
+  const repeatSet = new Set(state.repeat);
+  const repeatCards = pool.filter((_, i) => repeatSet.has(cardId(pool[i] || CARDS[i], i)));
+  const unseenCards = pool.filter((c, i) => {
+    const id = globalCardId(c);
+    return !knownSet.has(id) && !repeatSet.has(id);
+  });
+  deck = [...repeatCards, ...unseenCards];
+}
+
+function globalCardId(card) {
+  return card.cat + ':' + card.term;
+}
+
+function cardId(card) {
+  return globalCardId(card);
+}
+
+// ===== RENDER =====
+const cardStack = document.getElementById('cardStack');
+const emptyState = document.getElementById('emptyState');
+
+function render() {
+  buildDeck();
+  cardStack.innerHTML = '';
+
+  if (deck.length === 0) {
+    emptyState.classList.add('visible');
+  } else {
+    emptyState.classList.remove('visible');
+    // Show up to 3 cards
+    const show = deck.slice(0, 3).reverse();
+    show.forEach((card, i) => {
+      const idx = show.length - 1 - i;
+      const el = createCardEl(card, idx);
+      cardStack.appendChild(el);
+    });
+  }
+
+  updateStats();
+}
+
+function createCardEl(card, stackIdx) {
+  const el = document.createElement('div');
+  el.className = 'card';
+  if (stackIdx === 1) el.classList.add('behind');
+  if (stackIdx === 2) el.classList.add('far-behind');
+  el.dataset.cat = card.cat;
+  el.dataset.id = globalCardId(card);
+
+  const catNames = {
+    attribution: 'Attribution',
+    causal: 'Causal',
+    mmm: 'MMM',
+    stats: 'Statistics',
+    code: 'Code',
+    business: 'Business'
+  };
+
+  el.innerHTML = `
+    <div class="verdict verdict-know">Know</div>
+    <div class="verdict verdict-repeat">Again</div>
+    <span class="card-cat-badge">${catNames[card.cat]}</span>
+    <div class="card-term">${card.term}</div>
+    <div class="card-explain">${card.explain}</div>
+    ${card.example ? `<div class="card-example">${card.example}</div>` : ''}
+  `;
+
+  if (stackIdx === 0) {
+    setupSwipe(el, card);
+  }
+
+  return el;
+}
+
+function updateStats() {
+  const cat = state.currentCat;
+  const pool = cat === 'all' ? CARDS : CARDS.filter(c => c.cat === cat);
+  const total = pool.length;
+  const knownInCat = pool.filter(c => state.known.includes(globalCardId(c))).length;
+  const repeatInCat = pool.filter(c => state.repeat.includes(globalCardId(c))).length;
+  const remaining = total - knownInCat;
+
+  document.getElementById('knownCount').textContent = knownInCat;
+  document.getElementById('repeatCount').textContent = repeatInCat;
+  document.getElementById('remainCount').textContent = remaining;
+  document.getElementById('streakCount').textContent = state.streak;
+
+  const pct = total > 0 ? (knownInCat / total * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${knownInCat} / ${total}`;
+}
+
+// ===== SWIPE =====
+function setupSwipe(el, card) {
+  let startX = 0, startY = 0, currentX = 0, dragging = false, startTime = 0;
+
+  function onStart(e) {
+    dragging = true;
+    startTime = Date.now();
+    const p = e.touches ? e.touches[0] : e;
+    startX = p.clientX;
+    startY = p.clientY;
+    currentX = 0;
+    el.style.transition = 'none';
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const p = e.touches ? e.touches[0] : e;
+    currentX = p.clientX - startX;
+    const rotate = currentX * 0.08;
+    el.style.transform = `translateX(${currentX}px) rotate(${rotate}deg)`;
+
+    el.classList.remove('hint-know', 'hint-repeat');
+    if (currentX > 50) el.classList.add('hint-know');
+    if (currentX < -50) el.classList.add('hint-repeat');
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    const threshold = 80;
+
+    if (currentX > threshold) {
+      swipeCard(el, card, 'know');
+    } else if (currentX < -threshold) {
+      swipeCard(el, card, 'repeat');
+    } else {
+      el.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
+      el.style.transform = '';
+      el.classList.remove('hint-know', 'hint-repeat');
+    }
+  }
+
+  el.addEventListener('mousedown', onStart);
+  el.addEventListener('touchstart', onStart, { passive: true });
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('mouseup', onEnd);
+  window.addEventListener('touchend', onEnd);
+
+  el._cleanup = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('mouseup', onEnd);
+    window.removeEventListener('touchend', onEnd);
+  };
+}
+
+function swipeCard(el, card, direction) {
+  if (el._cleanup) el._cleanup();
+
+  const id = globalCardId(card);
+  history.push({ card, direction, id });
+
+  if (direction === 'know') {
+    state.known = [...new Set([...state.known, id])];
+    state.repeat = state.repeat.filter(r => r !== id);
+    state.streak++;
+    el.classList.add('fly-right');
+  } else {
+    state.repeat = [...new Set([...state.repeat, id])];
+    state.streak = 0;
+    el.classList.add('fly-left');
+  }
+
+  saveState();
+
+  setTimeout(() => {
+    render();
+  }, 350);
+}
+
+// ===== BUTTONS =====
+document.getElementById('btnKnow').addEventListener('click', () => {
+  const top = cardStack.querySelector('.card:not(.behind):not(.far-behind)');
+  if (!top) return;
+  const card = deck[0];
+  if (card) swipeCard(top, card, 'know');
+});
+
+document.getElementById('btnRepeat').addEventListener('click', () => {
+  const top = cardStack.querySelector('.card:not(.behind):not(.far-behind)');
+  if (!top) return;
+  const card = deck[0];
+  if (card) swipeCard(top, card, 'repeat');
+});
+
+document.getElementById('btnUndo').addEventListener('click', undo);
+
+function undo() {
+  if (history.length === 0) return;
+  const last = history.pop();
+  state.known = state.known.filter(id => id !== last.id);
+  state.repeat = state.repeat.filter(id => id !== last.id);
+  if (last.direction === 'know' && state.streak > 0) state.streak--;
+  saveState();
+  render();
+}
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') document.getElementById('btnKnow').click();
+  if (e.key === 'ArrowLeft') document.getElementById('btnRepeat').click();
+  if (e.key === 'z' || e.key === 'Z') undo();
+});
+
+// ===== CATEGORIES =====
+document.getElementById('categories').addEventListener('click', (e) => {
+  const pill = e.target.closest('.cat-pill');
+  if (!pill) return;
+  document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  state.currentCat = pill.dataset.cat;
+  saveState();
+  render();
+});
+
+// ===== RESET =====
+document.getElementById('btnReset').addEventListener('click', () => {
+  const cat = state.currentCat;
+  if (cat === 'all') {
+    state.known = [];
+    state.repeat = [];
+  } else {
+    const catCards = CARDS.filter(c => c.cat === cat).map(globalCardId);
+    state.known = state.known.filter(id => !catCards.includes(id));
+    state.repeat = state.repeat.filter(id => !catCards.includes(id));
+  }
+  state.streak = 0;
+  saveState();
+  render();
+});
+
+// ===== INIT =====
+// Restore active cat pill
+document.querySelectorAll('.cat-pill').forEach(p => {
+  p.classList.toggle('active', p.dataset.cat === state.currentCat);
+});
+
+render();
+</script>
+</body>
+</html>
